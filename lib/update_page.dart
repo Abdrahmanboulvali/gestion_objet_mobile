@@ -115,7 +115,7 @@ class _UpdatePageState extends State<UpdatePage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // العودة إلى الصفحة السابقة
+            Navigator.pop(context);
           },
         ),
       ),
@@ -188,19 +188,19 @@ class _UpdatePageState extends State<UpdatePage> {
                   SizedBox(height: 16),
                   TextField(
                     controller: _dateController,
-                    readOnly: true, // منع الكتابة اليدوية
+                    readOnly: true,
                     decoration: InputDecoration(
                       labelText: 'Date',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.calendar_today),
                     ),
                     onTap: () async {
-                      FocusScope.of(context).requestFocus(FocusNode()); // إخفاء لوحة المفاتيح
+                      FocusScope.of(context).requestFocus(FocusNode());
                       DateTime? pickedDate = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
-                        firstDate: DateTime(2000), // الحد الأدنى للتاريخ
-                        lastDate: DateTime(2100), // الحد الأقصى للتاريخ
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
                       );
                       if (pickedDate != null) {
                         setState(() {

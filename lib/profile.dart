@@ -18,7 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? numTel;
   String? adresse;
   int? userId;
-  bool isLoading = true; // حالة التحميل
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -36,7 +36,6 @@ class _ProfilePageState extends State<ProfilePage> {
         if (response.statusCode == 200) {
           var data = json.decode(response.body);
 
-          // إذا كانت البيانات قائمة، خذ أول عنصر
           if (data is List) {
             data = data.first;
           }
@@ -48,11 +47,11 @@ class _ProfilePageState extends State<ProfilePage> {
               email = data['email']?.toString() ?? 'Non spécifié';
               numTel = data['num_tel']?.toString() ?? 'Non spécifié';
               adresse = data['adress']?.toString() ?? 'Non spécifié';
-              isLoading = false; // انتهى التحميل
+              isLoading = false;
             });
           } else {
             setState(() {
-              isLoading = false; // انتهى التحميل
+              isLoading = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Aucune donnée trouvée pour cet utilisateur')),
@@ -60,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         } else {
           setState(() {
-            isLoading = false; // انتهى التحميل
+            isLoading = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Erreur lors de la récupération des données: ${response.statusCode}')),
@@ -68,7 +67,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       } catch (e) {
         setState(() {
-          isLoading = false; // انتهى التحميل
+          isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur de connexion: $e')),
@@ -76,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } else {
       setState(() {
-        isLoading = false; // انتهى التحميل
+        isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Utilisateur non connecté')),

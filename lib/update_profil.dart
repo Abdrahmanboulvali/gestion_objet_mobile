@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String? nom;
@@ -21,6 +25,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _numTelController;
   late TextEditingController _adresseController;
   late TextEditingController _motPasseController;
+  int? userId;
+  bool isLoading = true;
+
+
 
   @override
   void initState() {
@@ -30,7 +38,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: widget.email);
     _numTelController = TextEditingController(text: widget.numTel);
     _adresseController = TextEditingController(text: widget.adresse);
-    _motPasseController = TextEditingController();  // حقل كلمة المرور
+    _motPasseController = TextEditingController();
   }
 
   @override
@@ -45,25 +53,54 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
-    if (_formKey.currentState!.validate()) {
-      // قم بإرسال البيانات المعدلة إلى الخادم
-      final updatedData = {
-        'nom': _nomController.text,
-        'prenom': _prenomController.text,
-        'email': _emailController.text,
-        'num_tel': _numTelController.text,
-        'adress': _adresseController.text,
-        'mot_passe': _motPasseController.text,  // إضافة كلمة المرور هنا
-      };
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    userId = prefs.getInt('identifiant');
 
-      // استبدل هذا الجزء بطلب HTTP لإرسال البيانات إلى الخادم
-      print('تم حفظ البيانات: $updatedData');
+    if (_motPasseController.text.isEmpty) {
+      _showSnackBar('Veuillez entrer votre mot de passe');
+      return;
+    }
 
-      // عد إلى الصفحة السابقة بعد الحفظ
+    // 🔹 تحقق من كلمة المرور قبل إرسال التعديل
+    final verifyResponse = await http.post(
+      Uri.parse('http://127.0.0.1:5001/api/verify_password/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'mot_passe': _motPasseController.text}),
+    );
+
+    if (verifyResponse.statusCode != 200) {
+      _showSnackBar('Mot de passe incorrect');
+      return;
+    }
+
+    // 🔹 إذا كانت كلمة المرور صحيحة، تابع التحديث
+    final updatedData = {
+      'nom': _nomController.text,
+      'prenom': _prenomController.text,
+      'email': _emailController.text,
+      'num_tel': _numTelController.text,
+      'adress': _adresseController.text,
+    };
+
+    final response = await http.put(
+      Uri.parse('http://127.0.0.1:5001/api/update_profile/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(updatedData),
+    );
+
+    if (response.statusCode == 200) {
+      _showSnackBar('Mis à jour avec succès');
       Navigator.pop(context, updatedData);
+    } else {
+      print("Erreur serveur: ${response.body}");
+      _showSnackBar('Erreur lors de la communication avec le serveur');
     }
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,25 +164,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       )),
                     ]),
                     DataRow(cells: [
-                      DataCell(Text('Email')),
-                      DataCell(TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez remplir ce champ';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Veuillez entrer un email valide';
-                          }
-                          return null;
-                        },
-                      )),
-                    ]),
-                    DataRow(cells: [
                       DataCell(Text('Numéro de téléphone')),
                       DataCell(TextFormField(
                         controller: _numTelController,
@@ -159,6 +177,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           }
                           if (!RegExp(r'^\d+$').hasMatch(value)) {
                             return 'Veuillez entrer un numéro valide';
+                          }
+                          return null;
+                        },
+                      )),
+                    ]),
+                    DataRow(cells: [
+                      DataCell(Text('Email')),
+                      DataCell(TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez remplir ce champ';
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            return 'Veuillez entrer un email valide';
                           }
                           return null;
                         },
@@ -180,10 +217,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       )),
                     ]),
                     DataRow(cells: [
-                      DataCell(Text('Mot de passe')), // حقل كلمة المرور
+                      DataCell(Text('Mot de passe')),
                       DataCell(TextFormField(
                         controller: _motPasseController,
-                        obscureText: true,  // إخفاء النص في الحقل
+                        obscureText: true,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(),
                           hintText: 'Entrez votre mot de passe',
